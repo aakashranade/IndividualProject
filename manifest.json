@@ -2,9 +2,17 @@
   "name": "PROV-extractor",
   "version": "0.1.0",
   "description": "Extract PROV data from news websites",
-  "background": {
-    "scripts": ["background.js"]
-  },
-  "manifest_version": 2
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": ["content.js"]
+    }
+  ],
+  "manifest_version": 2,
+  "permissions": [
+    "pageCapture"
+  ]
 
 }
