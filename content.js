@@ -1,11 +1,35 @@
+//chrome.runtime.onMessage.addListener(gotMessage);
+
+//function gotMessage(request, sender, sendResponse){
+  // console.log(request);
+  // console.log(sender);
+  // console.log(sendResponse);
+  // if(request.subject === "request-data"){
+  //   console.log("requested data!");
+      var data = getData();
+      // console.log(data);
+      // let message = {
+      //   subject: "view-data",
+      //   metadata: data
+      // }
+    //sendResponse({message});
+    chrome.runtime.sendMessage(data);
+//  }
+//  return true;
+    //alert("na na na na, I'm FATMAN!");
+    //let metadata = JSON.stringify(getData());
+    //document.body.innerHTML = metadata;
+  //window.open("file:view/index.html")
+  //}
+
 function getData(){
-  var data = new Map();
+  var data = {};
   let tags = document.getElementsByTagName('meta');
   for (element of tags) {
     //console.log(element.attributes[0].name);
     if(element.attributes[0].name == "name" || element.attributes[0].name == "property" ){
 
-      data.set(element.attributes[0].value, element.content)
+      data[element.attributes[0].value] = element.content
 
     }
   }
@@ -15,17 +39,18 @@ function getData(){
   for (element of scripts) {
     if(element.type == "application/ld+json") {
 
-      console.log(element.innerHTML);
-      data.set(element.type + i, element.innerHTML)
+      //console.log(element.innerHTML);
+      data[element.type + i] = element.innerHTML
       i++
 
     }
   }
-  console.log(data);
-
+  //console.log(data);
+  return data;
 }
 
-getData();
+
+//getData();
 
 //let tags = document.getElementsByTagName('meta');
 //let scripts = document.getElementsByTagName('script');

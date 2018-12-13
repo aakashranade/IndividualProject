@@ -1,27 +1,20 @@
-chrome.browserAction.onClicked.addListener(onClicked);
-function getData(){
-  var data = [];
-  let tags = document.getElementsByTagName('meta');
-  for (element of tags) {
-    data.push(element)
-  }
+chrome.browserAction.onClicked.addListener(buttonClicked);
 
-  let scripts = document.getElementsByTagName('script');
-  for (element of scripts) {
-
-    data.push(element)
-    
-  }
-  console.log("got data!");
+window.metadata = {};
+function buttonClicked(tab){
+  console.log("clicked!");
+  console.log(window.metadata);
+  // let message = {
+  //   subject: "request-data"
+  // }
+  // chrome.tabs.sendMessage(tab.id, message);
+  chrome.tabs.create({url: 'view/index.html'})
 
 }
 
-
-function onClicked(){
-  console.log("clicked!");
-  chrome.runtime.sendMessage({
-    subject: 'view-data',
-    dataToSend: data
-  })
-
+chrome.runtime.onMessage.addListener(gotMessage);
+function gotMessage(request, sender, sendResponse){
+  // if (request.subject === "view-data") {
+    window.metadata = request
+  // }
 }
