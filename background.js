@@ -9,14 +9,10 @@ window.metadata = {};
  * @return {type}     description
  */
 function buttonClicked( tab ) {
-   console.log( "clicked!" );
-   console.log( window.metadata );
    let message = {
       subject: "request-data"
    }
    chrome.tabs.sendMessage( tab.id, message );
-   //chrome.tabs.create({url: 'view/index.html'})
-
 }
 
 chrome.runtime.onMessage.addListener( gotMessage );

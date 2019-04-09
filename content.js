@@ -10,7 +10,6 @@ chrome.runtime.onMessage.addListener( gotMessage );
  */
 function gotMessage( request, sender, sendResponse ) {
    if ( request.subject === "request-data" ) {
-      console.log( "requested data!" );
       let message = {
          subject: "PROV-data",
          metadata: getData()
@@ -28,6 +27,7 @@ function gotMessage( request, sender, sendResponse ) {
 function getData() {
    var provData = {};
    var websiteData = {};
+   var articleBody = [];
    var metaData = {
       '_count': {}
    };
@@ -59,20 +59,38 @@ function getData() {
          };
       }
    }
+
+   var articleClassNames = [
+     "content__article-body from-content-api js-article__body",
+     "story-body__link-external"
+   ]
+
+   for ( var i = 0; i < articleClassNames.length; i++ ) {
+      var articleLength = document.getElementsByClassName( articleClassNames[ i ] ).length;
+      if ( articleLength != 0 ) {
+
+         for ( var j = 0; j < articleLength; j++ ) {
+            articleBody.push( document.getElementsByClassName( articleClassNames[ i ] )[ j ] );
+         }
+      }
+   }
+
+
+
    websiteData = {
       ...metaData,
       ...jsonData,
    }
-   console.log( websiteData );
+
 
    provData[ 'domain' ] = {
       'url': document.domain
    };
-   console.log( provData[ 'domain' ][ 'url' ] );
+
    provData[ 'author' ] = getAuthor( websiteData, metaData, jsonData );
    provData[ 'publisher' ] = getPublisher( websiteData );
-   console.log( provData[ 'publisher' ] );
    provData[ 'article' ] = getArticleData( websiteData );
+   provData[ 'links' ] = getLinks( articleBody )
    return provData;
 }
 
@@ -84,11 +102,11 @@ function getData() {
  * @param  {Object} websiteData
  * @param  {Object} metaData
  * @param  {Object} jsonData
- * @return {Object}             
+ * @return {Object}
  */
 function getAuthor( websiteData, metaData, jsonData ) {
    var authors = [];
-   //console.log("author");
+
    var numberOfAuthors = 0;
    if ( metaData[ '_count' ][ 'author' ] ) {
       numberOfAuthors = metaData[ '_count' ][ 'author' ];
@@ -100,13 +118,11 @@ function getAuthor( websiteData, metaData, jsonData ) {
       var id = ( i != 0 ) ? "author" + i : "author"
       authorArray.push( metaData[ id ] );
    }
-   console.log( numberOfAuthors );
-
 
    for ( var i = 0; i < numberOfAuthors; i++ ) {
       var author = {}
       var authorId = ( i != 0 ) ? "author" + i : "author"
-      //console.log("sdasd");
+
       if ( metaData.hasOwnProperty( authorId ) ) {
          author[ 'name' ] = metaData[ authorId ];
       } else if ( jsonData.hasOwnProperty( 'author' ) && jsonData[ 'author' ].hasOwnProperty( 'name' ) ) {
@@ -116,14 +132,12 @@ function getAuthor( websiteData, metaData, jsonData ) {
       }
 
       if ( websiteData.hasOwnProperty( 'article:author' ) ) {
-         if ( document.domain == "www.bbc.com" || document.domain == "www.bbc.co.uk" ) {
+         if ( document.domain == "www.bbc.com" || document.domain == "www.bbc.co.uk" || document.domain == "bbc.co.uk" ) {
             author[ 'url' ] = websiteData[ 'article:author' ]
          } else if ( document.domain == "www.theguardian.com" ) {
-            //console.log(metaData['article:author'])
             var authorUrl = websiteData[ 'article:author' ].split( "," )[ i ].split( document.domain + "/" )[ 1 ]
             author[ 'url' ] = authorUrl
          } else if ( websiteData[ 'article:author' ] ) {
-            //console.log(metaData['article:author'])
             authorUrl = websiteData[ 'article:author' ].split( document.domain + "/" )[ 1 ]
             author[ 'url' ] = authorUrl
          }
@@ -133,7 +147,6 @@ function getAuthor( websiteData, metaData, jsonData ) {
          authors.push( author )
       }
    }
-   console.log( authors );
    return authors;
 }
 
@@ -152,8 +165,6 @@ function getPublisher( websiteData ) {
    } else {
       publisher[ 'name' ] = "-"
    }
-
-   console.log( publisher )
    return publisher;
 }
 
@@ -167,6 +178,7 @@ function getPublisher( websiteData ) {
 function getArticleData( websiteData ) {
    var article = {};
    article[ 'url' ] = document.URL.split( document.domain + "/" )[ 1 ];
+   article[ 'title' ] = websiteData[ 'og:title' ];
    if ( websiteData.hasOwnProperty( 'article:published_time' ) ) {
       article[ 'publishedTime' ] = websiteData[ 'article:published_time' ];
    } else if ( websiteData.hasOwnProperty( 'datePublished' ) ) {
@@ -174,8 +186,38 @@ function getArticleData( websiteData ) {
    } else {
       article[ 'publishedTime' ] = '-';
    }
-
-   article[ 'title' ] = websiteData[ 'og:title' ];
-   console.log( article[ 'title' ] )
    return article;
+}
+
+/**
+ * getLinks - Extract links from the article body
+ *
+ * @param  {Array} articleBody
+ * @return {Array}
+ */
+function getLinks( articleBody ) {
+   var links = [];
+   if ( document.domain === "www.theguardian.com" ) {
+      var articleATags = articleBody[ 0 ].getElementsByTagName( 'a' );
+      for ( aTagIndex in articleATags ) {
+         var aTag = articleATags[ aTagIndex ];
+         if ( aTag[ 'className' ] == 'u-underline' ) {
+            links.push( {
+               'hostname': aTag[ 'hostname' ],
+               'pathname': aTag[ 'pathname' ]
+            } );
+         }
+      }
+   } else if ( document.domain === "www.bbc.co.uk" || document.domain === "bbc.co.uk" ) {
+      for ( aTagIndex in articleBody ) {
+         var aTag = articleBody[ aTagIndex ];
+         if ( ( aTag[ 'className' ] == 'story-body__link-external' ) ) {
+            links.push( {
+               'hostname': aTag[ 'hostname' ],
+               'pathname': aTag[ 'pathname' ]
+            } );
+         }
+      }
+   }
+   return links;
 }
